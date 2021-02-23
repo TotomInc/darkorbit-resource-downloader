@@ -55,7 +55,7 @@ function generateDownloadLinks(resources) {
     const files = resource.filecollection.file.map((file) => ({ ...file.$ }));
 
     const resourceDownloadLinks = files.map((file) => {
-      const fileLocation = locations.find((location) => location.id == file.location);
+      const fileLocation = locations.find((location) => location.id === file.location);
 
       if (!fileLocation) {
         console.error(`Unable to find fileLocation of ${file.id}: ${file.location}`);
@@ -86,7 +86,7 @@ function generateDownloadLinks(resources) {
 async function fetchResources() {
   const resources = [];
 
-  for (let i = 0; i < RESOURCES_URLS.length; i++) {
+  for (let i = 0; i < RESOURCES_URLS.length; i += 1) {
     const resourceUrl = RESOURCES_URLS[i];
 
     await fetch(resourceUrl)
@@ -124,7 +124,7 @@ async function run() {
 
   console.log(`${downloadLinks.length} files to download.`);
 
-  for (let i = 0; i < downloadLinks.length; i++) {
+  for (let i = 0; i < downloadLinks.length; i += 1) {
     await downloadFile(downloadLinks[i]);
   }
 }
