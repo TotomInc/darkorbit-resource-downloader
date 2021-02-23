@@ -15,6 +15,7 @@ const MAIN_RESOURCES_URL = 'https://darkorbit-22.bpsecure.com/spacemap';
 const RESOURCES_URLS = [
   'https://darkorbit-22.bpsecure.com/spacemap/xml/resources_3d.xml',
   'https://darkorbit-22.bpsecure.com/spacemap/xml/resources_3d_particles.xml',
+  'https://darkorbit-22.bpsecure.com/spacemap/xml/resources.xml',
 ];
 
 /**
