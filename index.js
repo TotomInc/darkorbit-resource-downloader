@@ -7,6 +7,7 @@ const { pipeline } = require('stream');
 const { promisify } = require('util');
 const fetch = require('node-fetch');
 const xml2js = require('xml2js');
+const inquirer = require('inquirer');
 
 const streamPipeline = promisify(pipeline);
 
@@ -113,6 +114,50 @@ async function fetchResources() {
 }
 
 /**
+ * Prompt resources to download.
+ *
+ * @param {Array} resources
+ * @returns {Array}
+ */
+async function promptResourcesToDownload(resources) {
+  const itemsToDownload = [];
+
+  const answers = await inquirer.prompt(
+    [
+      {
+        type: 'checkbox',
+        name: 'resources',
+        message: 'What type of resource do you want to download?',
+        choices: ['3D_RESOURCES', '3D_PARTICLES', '2D_RESOURCES'],
+        validate: (answer) => {
+          if (answer.length < 1) {
+            return 'You must choose at least 1 item.';
+          }
+
+          return true;
+        },
+      },
+    ],
+  );
+
+  const resourcesAnswer = answers.resources;
+
+  if (resourcesAnswer.includes('3D_RESOURCES')) {
+    itemsToDownload.push(resources[0]);
+  }
+
+  if (resourcesAnswer.includes('3D_PARTICLES')) {
+    itemsToDownload.push(resources[1]);
+  }
+
+  if (resourcesAnswer.includes('2D_RESOURCES')) {
+    itemsToDownload.push(resources[2]);
+  }
+
+  return itemsToDownload;
+}
+
+/**
  * Main run function.
  */
 async function run() {
@@ -121,7 +166,8 @@ async function run() {
   }
 
   const resources = await fetchResources();
-  const downloadLinks = generateDownloadLinks(resources).flat();
+  const resourceTypes = await promptResourcesToDownload(resources);
+  const downloadLinks = generateDownloadLinks(resourceTypes).flat();
 
   console.log(`${downloadLinks.length} files to download.`);
 
