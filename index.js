@@ -14,9 +14,18 @@ const streamPipeline = promisify(pipeline);
 const OUTPUT_DIR = path.join('./output').normalize();
 const MAIN_RESOURCES_URL = 'https://darkorbit-22.bpsecure.com/spacemap';
 const RESOURCES_URLS = [
-  'https://darkorbit-22.bpsecure.com/spacemap/xml/resources_3d.xml',
-  'https://darkorbit-22.bpsecure.com/spacemap/xml/resources_3d_particles.xml',
-  'https://darkorbit-22.bpsecure.com/spacemap/xml/resources.xml',
+  {
+    name: 'RESOURCES_3D',
+    url: 'https://darkorbit-22.bpsecure.com/spacemap/xml/resources_3d.xml',
+  },
+  {
+    name: 'RESOURCES_3D_PARTICLES',
+    url: 'https://darkorbit-22.bpsecure.com/spacemap/xml/resources_3d_particles.xml',
+  },
+  {
+    name: 'RESOURCES',
+    url: 'https://darkorbit-22.bpsecure.com/spacemap/xml/resources.xml',
+  },
 ];
 
 /**
@@ -88,27 +97,23 @@ function generateDownloadLinks(resources) {
 async function fetchResources() {
   const resources = [];
 
-  for (let i = 0; i < RESOURCES_URLS.length; i += 1) {
-    const resourceUrl = RESOURCES_URLS[i];
+  const promises = RESOURCES_URLS.map(({ name, url }, i) => fetch(url)
+    .then((response) => {
+      if (response.ok) {
+        return response.text();
+      }
 
-    await fetch(resourceUrl)
-      .then((response) => {
-        if (response.ok) {
-          return response.text();
-        }
+      throw new Error(`Unable to fetch XML resources from ${name}: ${url}`);
+    })
+    .then((xml) => xml2js.parseStringPromise(xml))
+    .then((parsedXml) => {
+      resources[i] = parsedXml;
+    }));
 
-        throw new Error(`Unable to fetch XML resources from ${resourceUrl}`);
-      })
-      .then((xml) => xml2js.parseStringPromise(xml))
-      .then((parsedXml) => {
-        resources[i] = parsedXml;
-      })
-      .catch((err) => {
-        console.error(err);
-        console.log('Terminating process.');
-        process.exit(0);
-      });
-  }
+  await Promise.all(promises).catch((err) => {
+    console.error(err);
+    process.exit(0);
+  });
 
   return resources;
 }
@@ -128,31 +133,17 @@ async function promptResourcesToDownload(resources) {
         type: 'checkbox',
         name: 'resources',
         message: 'What type of resource do you want to download?',
-        choices: ['3D_RESOURCES', '3D_PARTICLES', '2D_RESOURCES'],
-        validate: (answer) => {
-          if (answer.length < 1) {
-            return 'You must choose at least 1 item.';
-          }
-
-          return true;
-        },
+        choices: RESOURCES_URLS.map(({ name }) => name),
+        validate: (answer) => (answer.length < 1 ? 'You must choose at least 1 item.' : true),
       },
     ],
   );
 
-  const resourcesAnswer = answers.resources;
+  answers.resources.forEach((name) => {
+    const index = RESOURCES_URLS.findIndex((RESOURCE_URL) => RESOURCE_URL.name === name);
 
-  if (resourcesAnswer.includes('3D_RESOURCES')) {
-    itemsToDownload.push(resources[0]);
-  }
-
-  if (resourcesAnswer.includes('3D_PARTICLES')) {
-    itemsToDownload.push(resources[1]);
-  }
-
-  if (resourcesAnswer.includes('2D_RESOURCES')) {
-    itemsToDownload.push(resources[2]);
-  }
+    itemsToDownload.push(resources[index]);
+  });
 
   return itemsToDownload;
 }
